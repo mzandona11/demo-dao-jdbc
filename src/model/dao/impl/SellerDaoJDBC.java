@@ -1,5 +1,6 @@
 package model.dao.impl;
 
+import db.DB;
 import model.dao.SellerDao;
 import model.entities.Departament;
 import model.entities.Seller;
@@ -8,6 +9,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class SellerDaoJDBC implements SellerDao {
@@ -62,6 +64,10 @@ public class SellerDaoJDBC implements SellerDao {
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }finally {
+            DB.closeStatement(st);
+            DB.closeResultSet(rs);
+
         }
     }
 
@@ -89,4 +95,41 @@ public class SellerDaoJDBC implements SellerDao {
     public List<Seller> findAll() {
         return List.of();
     }
+
+    @Override
+    public List<Seller> findByDepartament(Departament dep) {
+        PreparedStatement st = null;
+        ResultSet rs = null;
+
+        try {
+            st = conn.prepareStatement(
+                    "select s.id, s.Name, s.Email, s.BirthDate, s.BaseSalary, s.DepartmentId, d.Name as DepName" +
+                            " from   seller s  " +
+                            "   inner join department  d " +
+                            "     on d.id = s.DepartmentId " +
+                            " where s.DepartmentId = ?" +
+                            " order by Name");
+
+            st.setInt(1, dep.getId());
+
+            rs = st.executeQuery();
+
+            List<Seller> list = new ArrayList<>();
+
+            while (rs.next()){
+
+                Seller obj = instantiateSeller(rs, dep);
+
+                list.add(obj);
+            }
+
+            return list;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            DB.closeStatement(st);
+            DB.closeResultSet(rs);
+        }
+    }
+
 }
