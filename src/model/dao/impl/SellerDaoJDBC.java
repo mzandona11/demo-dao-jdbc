@@ -10,7 +10,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SellerDaoJDBC implements SellerDao {
 
@@ -22,7 +24,26 @@ public class SellerDaoJDBC implements SellerDao {
 
     @Override
     public void insert(Seller obj) {
+        PreparedStatement st = null;
 
+        try {
+            st =  conn.prepareStatement("INSERT INTO seller " +
+                                        "(NAME, Email, BirthDate, BaseSalary, DepartmentId)"+
+                                        "VALUES (?, ?, ?, ?, ?)");
+
+            st.setString(1, obj.getName());
+            st.setString(2, obj.getEmail());
+            st.setDate(3, new java.sql.Date(obj.getBirthDate().getTime()));
+            st.setDouble(4, obj.getBaseSalary());
+            st.setInt(5, obj.getDepartament().getId());
+
+            int rowsAffected = st.executeUpdate();
+
+            System.out.println("Done! Rows affected insert " + rowsAffected);
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -93,7 +114,41 @@ public class SellerDaoJDBC implements SellerDao {
 
     @Override
     public List<Seller> findAll() {
-        return List.of();
+        PreparedStatement st = null;
+        ResultSet rs = null;
+
+        try {
+            st = conn.prepareStatement(
+                    "select s.id, s.Name, s.Email, s.BirthDate, s.BaseSalary, s.DepartmentId, d.Name as DepName" +
+                            " from   seller s  " +
+                            "   inner join department  d " +
+                            "     on d.id = s.DepartmentId " +
+                            " order by Name");
+
+            rs = st.executeQuery();
+
+            List<Seller> list = new ArrayList<>();
+            Map<Integer, Departament> map = new HashMap<>();
+
+            while (rs.next()){
+
+                Departament dep = map.get(rs.getInt("DepartmentId"));
+                if (dep == null){
+                    dep = instantiateDepartament(rs);
+                    map.put(rs.getInt("DepartmentId"), dep);
+                }
+
+                Seller obj = instantiateSeller(rs, dep);
+                list.add(obj);
+            }
+
+            return list;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            DB.closeStatement(st);
+            DB.closeResultSet(rs);
+        }
     }
 
     @Override
@@ -115,11 +170,18 @@ public class SellerDaoJDBC implements SellerDao {
             rs = st.executeQuery();
 
             List<Seller> list = new ArrayList<>();
+            Map<Integer, Departament> map = new HashMap<>();
 
             while (rs.next()){
 
-                Seller obj = instantiateSeller(rs, dep);
+                Departament dep1 = map.get(rs.getInt("DepartmentId"));
 
+                if (dep1 == null){
+                    dep1 = instantiateDepartament(rs);
+                    map.put(rs.getInt("DepartmentId"), dep1);
+                }
+
+                Seller obj = instantiateSeller(rs, dep1);
                 list.add(obj);
             }
 
