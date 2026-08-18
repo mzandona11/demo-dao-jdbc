@@ -40,5 +40,13 @@ public class Program {
         Seller seller1 = new Seller(null, "Matheus Texto 2", "matheus@gmail.com", new Date(), 5000.00,dep);
         sellerDao.insert(seller1);
 
+
+        System.out.println("\n===== TESTE 5: seller update ========");
+        Seller seller2 = new Seller(3, "Alex Grey - update", "alex@gmail.com", new Date(), 3500.00,dep);
+        sellerDao.update(seller2);
+
+        System.out.println("\n===== TESTE 6: seller DELETE ========");
+        sellerDao.deleteById(14);
+
     }
 }
